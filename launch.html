@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html hidden>
+<head>
+  <meta charset="UTF-8" />
+  <title>KCHD Clinician Dashboard – Launch</title>
+</head>
+<body hidden>
+  <script src="lib/fhir-client.js"></script>
+  <script src="lib/fhir-client-cerner-additions.min.js"></script>
+  <script>
+    FHIR.oauth2.authorize({
+      clientId: "7b891b95-d872-453d-aa7c-d5c602cde619",
+      redirectUri: "https://verynewcoder28.github.io/clinician-dashboard/index.html",
+      scope: [
+        "launch",
+        "openid",
+        "profile",
+        "online_access",
+        "user/Appointment.read",
+        "user/Encounter.read",
+        "user/ServiceRequest.read",
+        "user/Practitioner.read",
+        "user/Patient.read"
+      ].join(" ")
+    });
+  </script>
+</body>
+</html>
