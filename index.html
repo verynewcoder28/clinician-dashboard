@@ -2,345 +2,159 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>KCHD Clinician Dashboard – Auth Debug</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: #0d1117;
-      color: #e6edf3;
-      font-family: "Consolas", "Menlo", "Monaco", monospace;
-      font-size: 13px;
-      line-height: 1.6;
-      padding: 24px;
-      min-height: 100vh;
-    }
-
-    header {
-      border-bottom: 1px solid #30363d;
-      padding-bottom: 16px;
-      margin-bottom: 24px;
-    }
-
-    header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #58a6ff;
-      letter-spacing: 0.5px;
-    }
-
-    header p {
-      color: #8b949e;
-      font-size: 12px;
-      margin-top: 4px;
-    }
-
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: 6px;
-      margin-bottom: 24px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.4px;
-      text-transform: uppercase;
-    }
-
-    .status-bar.loading {
-      background: #161b22;
-      border: 1px solid #30363d;
-      color: #8b949e;
-    }
-
-    .status-bar.success {
-      background: #0d2119;
-      border: 1px solid #238636;
-      color: #3fb950;
-    }
-
-    .status-bar.error {
-      background: #2a0d0d;
-      border: 1px solid #da3633;
-      color: #f85149;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-    }
-
-    .dot.pulse {
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .section {
-      margin-bottom: 28px;
-    }
-
-    .section-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #8b949e;
-      margin-bottom: 8px;
-      padding-left: 2px;
-    }
-
-    .code-block {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      padding: 16px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-all;
-      color: #e6edf3;
-      font-size: 12px;
-      line-height: 1.7;
-    }
-
-    .code-block.empty {
-      color: #484f58;
-      font-style: italic;
-    }
-
-    .error-block {
-      background: #2a0d0d;
-      border: 1px solid #da3633;
-      border-radius: 6px;
-      padding: 16px;
-      color: #f85149;
-      white-space: pre-wrap;
-      word-break: break-all;
-      font-size: 12px;
-      line-height: 1.7;
-    }
-
-    .token-field {
-      display: flex;
-      gap: 0;
-      margin-bottom: 6px;
-      border: 1px solid #30363d;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    .token-key {
-      background: #161b22;
-      color: #8b949e;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 600;
-      min-width: 160px;
-      border-right: 1px solid #30363d;
-      display: flex;
-      align-items: center;
-    }
-
-    .token-value {
-      background: #0d1117;
-      color: #e6edf3;
-      padding: 6px 12px;
-      font-size: 11px;
-      word-break: break-all;
-      flex: 1;
-      display: flex;
-      align-items: center;
-    }
-
-    .token-value.redacted {
-      color: #484f58;
-      font-style: italic;
-    }
-
-    .token-value.highlight {
-      color: #3fb950;
-    }
-
-    footer {
-      margin-top: 40px;
-      padding-top: 16px;
-      border-top: 1px solid #1c2128;
-      color: #484f58;
-      font-size: 11px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KCHD Clinician Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
-<body>
+<body hidden>
 
-  <header>
-    <h1>KCHD Clinician Dashboard</h1>
-    <p>King's College Hospital Dubai — SMART on FHIR Auth Debug View</p>
-  </header>
-
-  <div id="status" class="status-bar loading">
-    <div class="dot pulse"></div>
-    <span>Completing SMART authorisation…</span>
+  <!-- Loading overlay — visible during auth completion and data fetch -->
+  <div id="loading-overlay">
+    <div class="spinner-logo">
+      KCHD Clinician Dashboard
+      <span>King's College Hospital Dubai</span>
+    </div>
+    <div class="spinner"></div>
+    <div class="spinner-text">Loading dashboard...</div>
   </div>
 
-  <div id="content" style="display:none">
-
-    <div class="section">
-      <div class="section-label">Token State</div>
-      <div id="token-fields"></div>
-    </div>
-
-    <div class="section">
-      <div class="section-label">Practitioner Resource (JSON)</div>
-      <pre id="practitioner-block" class="code-block empty">Loading…</pre>
-    </div>
-
-    <div class="section">
-      <div class="section-label">ID Token Claims</div>
-      <pre id="id-token-block" class="code-block empty">–</pre>
-    </div>
-
-    <div class="section">
-      <div class="section-label">Raw Token Response</div>
-      <pre id="token-response-block" class="code-block empty">–</pre>
-    </div>
-
-  </div>
-
-  <div id="error-content" style="display:none">
-    <div class="section">
-      <div class="section-label">Error Detail</div>
-      <pre id="error-block" class="error-block"></pre>
+  <!-- Error state — hidden until an unrecoverable error occurs -->
+  <div id="error-state" hidden>
+    <div class="error-card">
+      <h2>Unable to load dashboard</h2>
+      <p>An error occurred during SMART authorisation or data fetch. Check your network connection and try relaunching from the EHR.</p>
+      <pre id="error-message"></pre>
     </div>
   </div>
 
-  <footer>
-    Client ID: 7b891b95-d872-453d-aa7c-d5c602cde619 &nbsp;|&nbsp;
-    SMART v1 · R4 · Confidential &nbsp;|&nbsp;
-    Scopes: launch openid profile online_access user/Practitioner.read user/Patient.read user/Encounter.read user/Appointment.read user/ServiceRequest.read
-  </footer>
+  <!-- Dashboard — hidden until data is ready -->
+  <div id="dashboard" hidden>
 
+    <header class="dash-header">
+      <div class="header-left">
+        <h1 id="doctor-name">Loading...</h1>
+        <p>DHH Family Medicine | King's College Hospital Dubai</p>
+      </div>
+      <div class="date-range-buttons" role="group" aria-label="Date range">
+        <button onclick="setDateRange(this, 0)">Today</button>
+        <button onclick="setDateRange(this, 7)">7d</button>
+        <button onclick="setDateRange(this, 14)" class="active">14d</button>
+        <button onclick="setDateRange(this, 30)">30d</button>
+      </div>
+    </header>
+
+    <main class="dash-main">
+
+      <!-- KPI row -->
+      <div class="section-label">Performance Summary</div>
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-total">--</div>
+          <div class="kpi-label">Total Appointments</div>
+        </div>
+        <div class="kpi-card accent-green">
+          <div class="kpi-value" id="kpi-fulfilled">--</div>
+          <div class="kpi-label">Fulfilled</div>
+        </div>
+        <div class="kpi-card accent-blue">
+          <div class="kpi-value" id="kpi-checkedin">--</div>
+          <div class="kpi-label">Checked In</div>
+        </div>
+        <div class="kpi-card accent-red">
+          <div class="kpi-value" id="kpi-dna">--</div>
+          <div class="kpi-label">DNA (No Show)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-value" id="kpi-avg">--</div>
+          <div class="kpi-label">Avg Consultation</div>
+        </div>
+        <div class="kpi-card accent-blue">
+          <div class="kpi-value" id="kpi-util">--</div>
+          <div class="kpi-label">Utilisation</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <h3>Appointments by Status</h3>
+          <div class="chart-wrapper">
+            <canvas id="chart-status"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Appointments by Service Type</h3>
+          <div class="chart-wrapper">
+            <canvas id="chart-service"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily volume chart -->
+      <div class="volume-card">
+        <h3>Daily Patient Volume</h3>
+        <div class="volume-chart-wrapper">
+          <canvas id="chart-volume"></canvas>
+        </div>
+      </div>
+
+      <!-- Outstanding orders -->
+      <div class="orders-card">
+        <h3>Outstanding Orders - Today's Patients</h3>
+
+        <!-- Skeleton shown while orders are fetching -->
+        <div id="orders-skeleton" style="display:none">
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+          <div class="skeleton-row"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="orders-empty" class="orders-empty" style="display:none">
+          No active orders for today's patients
+        </div>
+
+        <!-- Orders table -->
+        <div class="orders-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Patient</th>
+                <th>Order</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Authored</th>
+              </tr>
+            </thead>
+            <tbody id="orders-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+
+    <footer class="dash-footer">
+      KCHD Clinician Dashboard v0.1 | SMART on FHIR R4 | Not for clinical decision support
+    </footer>
+
+  </div><!-- /#dashboard -->
+
+  <!-- Load order is critical: fhir-client -> cerner additions -> Chart.js -> app.js -> inline init -->
   <script src="lib/fhir-client.js"></script>
   <script src="lib/fhir-client-cerner-additions.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="app.js"></script>
   <script>
-    FHIR.oauth2.ready().then(function (client) {
-
-      // ── Status bar ──────────────────────────────────────────────
-      var statusEl = document.getElementById("status");
-      statusEl.className = "status-bar success";
-      statusEl.innerHTML = '<div class="dot"></div><span>Authorised — token received</span>';
-
-      document.getElementById("content").style.display = "block";
-
-      // ── Token fields ─────────────────────────────────────────────
-      var state = client.state;
-      var tokenResponse = state.tokenResponse || {};
-
-      function field(key, value, cls) {
-        return (
-          '<div class="token-field">' +
-          '<div class="token-key">' + key + '</div>' +
-          '<div class="token-value ' + (cls || "") + '">' + (value || '–') + '</div>' +
-          '</div>'
-        );
-      }
-
-      var now = Math.floor(Date.now() / 1000);
-      var expiresAt = tokenResponse.expires_at
-        ? new Date(tokenResponse.expires_at * 1000).toISOString()
-        : "–";
-      var expiresIn = tokenResponse.expires_in ? tokenResponse.expires_in + "s" : "–";
-      var tokenType = tokenResponse.token_type || "–";
-      var scope = tokenResponse.scope || "–";
-      var patient = tokenResponse.patient || "–";
-      var encounter = tokenResponse.encounter || "–";
-
-      document.getElementById("token-fields").innerHTML =
-        field("token_type", tokenType, "highlight") +
-        field("expires_in", expiresIn) +
-        field("expires_at (UTC)", expiresAt) +
-        field("scope", scope) +
-        field("patient", patient) +
-        field("encounter", encounter) +
-        field("access_token", "[REDACTED — present: " + !!tokenResponse.access_token + "]", "redacted") +
-        field("id_token", "[REDACTED — present: " + !!tokenResponse.id_token + "]", "redacted");
-
-      // ── Raw token response (scrubbed) ─────────────────────────────
-      var scrubbedTokenResponse = Object.assign({}, tokenResponse, {
-        access_token: tokenResponse.access_token ? "[REDACTED]" : undefined,
-        id_token: tokenResponse.id_token ? "[REDACTED]" : undefined,
-        refresh_token: tokenResponse.refresh_token ? "[REDACTED]" : undefined
+    FHIR.oauth2.ready()
+      .then(function(client) {
+        loadDashboard(client);
+      })
+      .catch(function(err) {
+        document.body.removeAttribute('hidden');
+        var overlay = document.getElementById('loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+        showError('Authentication failed: ' + (err && (err.message || String(err))));
       });
-      document.getElementById("token-response-block").textContent =
-        JSON.stringify(scrubbedTokenResponse, null, 2);
-      document.getElementById("token-response-block").classList.remove("empty");
-
-      // ── ID token claims ───────────────────────────────────────────
-      try {
-        var idTokenEl = document.getElementById("id-token-block");
-        if (tokenResponse.id_token) {
-          var payload = tokenResponse.id_token.split(".")[1];
-          var decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-          idTokenEl.textContent = JSON.stringify(decoded, null, 2);
-          idTokenEl.classList.remove("empty");
-        } else {
-          idTokenEl.textContent = "No id_token in response";
-        }
-      } catch (e) {
-        document.getElementById("id-token-block").textContent = "Could not decode id_token: " + e.message;
-      }
-
-      // ── Practitioner resource ─────────────────────────────────────
-      var practBlock = document.getElementById("practitioner-block");
-
-      // Try fhirUser claim first, then userId, then user path
-      var userUrl = (state.tokenResponse || {}).fhirUser ||
-                    client.user && client.user.fhirUser ||
-                    null;
-
-      function fetchPractitioner(url) {
-        if (!url) {
-          return client.request("Practitioner/" + (tokenResponse.practitioner || "me"));
-        }
-        // If full URL, strip base
-        var base = client.state.serverUrl || "";
-        if (url.startsWith(base)) {
-          url = url.slice(base.length).replace(/^\//, "");
-        }
-        return client.request(url);
-      }
-
-      fetchPractitioner(userUrl)
-        .then(function (practitioner) {
-          practBlock.textContent = JSON.stringify(practitioner, null, 2);
-          practBlock.classList.remove("empty");
-        })
-        .catch(function (err) {
-          practBlock.textContent = "Practitioner fetch failed:\n" + (err.message || JSON.stringify(err));
-          practBlock.classList.add("empty");
-        });
-
-    }).catch(function (err) {
-
-      var statusEl = document.getElementById("status");
-      statusEl.className = "status-bar error";
-      statusEl.innerHTML = '<div class="dot"></div><span>Authorisation failed</span>';
-
-      document.getElementById("error-content").style.display = "block";
-
-      var msg = "";
-      if (err && err.message) msg += err.message;
-      if (err && err.stack)   msg += "\n\n" + err.stack;
-      if (!msg) msg = JSON.stringify(err, null, 2);
-
-      document.getElementById("error-block").textContent = msg;
-
-    });
   </script>
 
 </body>
