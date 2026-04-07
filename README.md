@@ -1,6 +1,6 @@
-# KCHD Clinician Performance Dashboard
+# Clinician Performance Dashboard
 
-SMART on FHIR provider-facing dashboard for King's College Hospital Dubai.
+SMART on FHIR provider-facing dashboard.
 Launched from an EHR context (Cerner Millennium). Not a standalone app.
 
 ---
